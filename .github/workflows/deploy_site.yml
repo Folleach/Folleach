@@ -1,0 +1,63 @@
+# Simple workflow for deploying static content to GitHub Pages
+name: Deploy static content to Pages
+
+on:
+  # Runs on pushes targeting the default branch
+  push:
+    branches: ["master", "deploy-test"]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  id-token: write
+
+# Allow one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Create site directory name
+      run: echo "SITE_DIRECTORY=client-$(date +'%Y-%m-%d_%H-%M-%S')" >> $GITHUB_ENV
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Create site folder
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.HOST_USER }}
+        key: ${{ secrets.HOST_KEY }}
+        script: mkdir ${{ env.SITE_DIRECTORY }}
+    - name: Copy site to host
+      uses: garygrossgarten/github-action-scp@release
+      with:
+        local: site
+        remote: /var/folleach/dynamic_client/${{ env.SITE_DIRECTORY }}
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.HOST_USER }}
+        privatekey: ${{ secrets.HOST_KEY }}
+    - name: Replace nginx conf constants
+      run: cat nginx/folleach.conf | sed -r "s/MAIN_SITE_CLIENT_DIRECTORY/dynamic_client\/${{ env.SITE_DIRECTORY }}/g" > temp && cat temp > nginx/folleach.conf
+    - name: Copy nginx conf to host
+      uses: garygrossgarten/github-action-scp@release
+      with:
+        local: nginx
+        remote: /var/folleach/nginx/
+        rmRemote: true
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.HOST_USER }}
+        privatekey: ${{ secrets.HOST_KEY }}
+    - name: Restart nginx
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.HOST_USER }}
+        key: ${{ secrets.HOST_KEY }}
+        script: sudo /home/scripts/nginx-restart.sh
+
