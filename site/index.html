@@ -1,21 +1,63 @@
 <head>
-    <title>Низя</title>
+    <title>Folleach</title>
     <meta charset="utf-8">
+    <link rel="icon" type="image/png" href="images/icon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter&family=PT+Sans&display=swap" rel="stylesheet">
     <style>
         * {
             font-family: 'Inter', sans-serif;
+            color: #041a25;
+        }
+        html {
+            background: radial-gradient(#dff2ff, #b0ddfa);
+            height: 100dvh;
+        }
+        h1, p {
+            margin: 0.1em 0;
+        }
+        h1 {
+            font-size: 3em;
+        }
+        p {
+            font-size: 1.5em;
+        }
+        a > object {
+            pointer-events: none;
+        }
+        a {
+            transition: ease 0.15s;
+        }
+        a:hover {
+            scale: 1.15;
         }
     </style>
 </head>
+
 <body style="margin: 0;">
-<div style="justify-content: center; display: flex; text-align: center; align-items: center; height: 100vh;">
-    <div style="scale: 2;">
-        <p style="font-size: large; color: #333;">Notihing to see here &gt;_&lt;</p>
-        <p style="color: #AAA;">See you next time</p>
-        <div style="min-height: 10vh;"></div>
+    <div style="justify-content: center; display: flex; align-items: center; margin-top: 20%;">
+        <div style="display: grid; grid-template-columns: 13em auto;">
+            <img
+                src="images/me.png"
+                width="300em"
+                alt="Folleach in Himmis's Art"
+                title="Folleach in Himmis's Art" />
+            <div style="margin-top: 2.5em;">
+                <h1>Folleach</h1>
+                <p>A full-queue developer ^_^</p>
+                <div style="display: grid; grid-auto-flow: column; text-align: center; margin-top: 1.2em;">
+                    <a href="https://github.com/Folleach" style="display: block;">
+                        <object type="image/svg+xml" data="images/github.svg"></object>
+                    </a>
+                    <a href="https://folleach.ru/l/discord" style="display: block;">
+                        <object type="image/svg+xml" data="images/discord.svg"></object>
+                    </a>
+                    <a href="https://youtube.com/Folleach" style="display: block;">
+                        <object type="image/svg+xml" data="images/youtube.svg"></object>
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
-</div>
 </body>
