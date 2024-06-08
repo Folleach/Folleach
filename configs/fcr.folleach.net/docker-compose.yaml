@@ -1,0 +1,15 @@
+services:
+  registry:
+    image: registry:2.8.3
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      REGISTRY_HTTP_ADDR: 0.0.0.0:5000
+      REGISTRY_AUTH: htpasswd
+      REGISTRY_AUTH_HTPASSWD_REALM: "Docker Registry Realm"
+      REGISTRY_AUTH_HTPASSWD_PATH: /.htpasswd
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt
+      - /var/lib/docker/registry:/var/lib/registry
+      - ./auth/.htpasswd:/.htpasswd
