@@ -1,0 +1,38 @@
+services:
+  ceph-mon1:
+    image: quay.io/ceph/daemon
+    container_name: ceph-mon1
+    command: mon
+    environment:
+      - MON_IP=fd00:f8::2
+      - CEPH_PUBLIC_NETWORK=fd00:f8::/48
+    volumes:
+      - /mnt/data1/ceph/ceph1/mon-config:/etc/ceph
+      - /mnt/data1/ceph/ceph1/mon-var:/var/lib/ceph/
+    network_mode: host
+
+  ceph-mgr1:
+    image: ceph/daemon
+    container_name: ceph-mgr1
+    command: mgr
+    volumes:
+      - /mnt/data1/ceph/ceph1/mgr-config:/etc/ceph
+      - /mnt/data1/ceph/ceph1/mgr-var:/var/lib/ceph
+    network_mode: host
+    restart: unless-stopped
+    depends_on:
+      - ceph-mon1
+
+  ceph-osd1:
+    image: quay.io/ceph/daemon
+    container_name: ceph-osd1
+    command: osd
+    environment:
+      - OSD_TYPE=directory
+      - OSD_DIRECTORY=/var/lib/ceph/osd/osd1
+    volumes:
+      - /mnt/data1/ceph/ceph1/osd-config:/etc/ceph
+      - /mnt/data1/ceph/ceph1/osd-data:/var/lib/ceph/osd/osd1
+    network_mode: host
+    depends_on:
+      - ceph-mon1
