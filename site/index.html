@@ -5,14 +5,14 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter&family=PT+Sans&display=swap" rel="stylesheet">
-    <meta property="og:title" content="Folleach">
-    <meta property="og:description" content="A full-queue developer ^_^">
-    <meta property="og:image" content="https://folleach.ru/content/images/icon.png">
-    <meta property="og:url" content="https://folleach.ru/">
+    <meta property="title" content="Folleach">
+    <meta property="description" content="A full-queue developer ^_^">
+    <meta property="image" content="https://folleach.net/content/images/icon.png">
+    <meta property="url" content="https://folleach.net/">
     <style>
         * {
             font-family: 'Inter', sans-serif;
-            color: #0b4260;
+            color: #133051;
         }
         body {
             background: #accdee;
@@ -27,14 +27,17 @@
         p {
             font-size: 1.5em;
         }
-        a > object {
-            pointer-events: none;
+        a {
+            cursor: default;
         }
         a {
             transition: ease 0.15s;
         }
         a:hover {
             scale: 1.1;
+        }
+        .primary {
+            fill: #163b66;
         }
     </style>
 </head>
@@ -43,25 +46,33 @@
     <div style="justify-content: center; display: flex; align-items: center; height: 85dvh;">
         <div style="display: grid; grid-template-columns: 20em auto;">
             <img
-                src="content/images/me_winter.png"
+                src="content/images/me.png"
                 width="500em"
-                alt="Folleach in Himmis's Art with winter hat by me"
-                title="Folleach in Himmis's Art with winter hat by me" />
-            <div style="margin-top: 6em;">
+                alt="Folleach in Himmis's Art"
+                title="Folleach in Himmis's Art" />
+            <div style="margin-top: 2em;">
                 <h1>Folleach</h1>
                 <p>A full-queue developer ^_^</p>
                 <div style="display: grid; grid-auto-flow: column; text-align: center; margin-top: 2em;">
                     <a href="https://github.com/Folleach" style="display: block;">
-                        <object type="image/svg+xml" data="content/images/github.svg"></object>
+                        <svg height="30" width="60">
+                            <image xlink:href="content/images/github.svg"/>
+                        </svg>
                     </a>
-                    <a href="https://folleach.ru/l/discord" style="display: block;">
-                        <object type="image/svg+xml" data="content/images/discord.svg"></object>
+                    <a href="https://folleach.net/l/discord" style="display: block;">
+                        <svg height="30" width="60">
+                            <image xlink:href="content/images/discord.svg"/>
+                        </svg>
                     </a>
                     <a href="https://youtube.com/Folleach" style="display: block;">
-                        <object type="image/svg+xml" data="content/images/youtube.svg"></object>
+                        <svg height="30" width="60">
+                            <image xlink:href="content/images/youtube.svg"/>
+                        </svg>
                     </a>
                     <a href="https://www.twitch.tv/Folleach" style="display: block;">
-                        <object type="image/svg+xml" data="content/images/twitch.svg"></object>
+                        <svg height="30" width="60">
+                            <image xlink:href="content/images/twitch.svg"/>
+                        </svg>
                     </a>
                 </div>
             </div>
