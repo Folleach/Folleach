@@ -10,27 +10,30 @@
                                                              A full-queue developer - if it's more convenient for you">
     <meta name="image" property="image" content="https://folleach.net/content/images/icon.png">
     <meta name="url" property="url" content="https://folleach.net/">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <style>
         * {
             font-family: sans-serif;
             color: #133051;
         }
+
         body {
-            background: #accdee;
+            background-color: #3062d0;
+            background-image: url("content/images/winter_ver3.jpg");
+            background-size: cover;
+            background-position: 70% 35%;
+
             height: 100dvh;
+            margin: 0;
         }
         h1, p {
             margin: 0.1em 0;
         }
         h1 {
-            font-size: 3em;
+            font-size: 2.7em;
         }
         p {
-            font-size: 1.5em;
-        }
-        a {
-            cursor: default;
+            font-size: 1.3rem;
         }
         a {
             transition: ease 0.15s;
@@ -38,47 +41,61 @@
         a:hover {
             scale: 1.1;
         }
-        .primary {
-            fill: #163b66;
+
+        .container {
+            position: absolute;
+
+            transform: translate(-50%, -50%);
+
+            left: calc(70% + 2rem);
+            top: calc(65% - 0px);
+
+            background-color: #3b79c133;
+            border-radius: 1rem;
+            padding: 0.5rem 1.5rem 1.5rem 1.5rem;
+            width: 22rem;
+            max-width: 90%;
+
+            backdrop-filter: brightness(1.05) saturate(1.3) blur(3px);
+            transition: all 0.2s ease-in-out;
+        }
+
+        @media (max-width: 850px) {
+            .container {
+                left: calc(50%);
+            }
+
+            body {
+                background-position: 65% 35%;
+            }
         }
     </style>
 </head>
-
-<body style="margin: 0;">
-    <div style="justify-content: center; display: flex; align-items: center; height: 85dvh;">
-        <div style="display: grid; grid-template-columns: 20em auto;">
-            <img
-                src="content/images/me_winter.png"
-                width="800em"
-                style="margin-left: -14em;"
-                alt="Folleach in Himmis's Art with winter hat by me"
-                title="Folleach in Himmis's Art with winter hat by me" />
-            <div style="margin-top: 10em;">
-                <h1>Folleach</h1>
-                <p>A full-queue developer ^_^</p>
-                <div style="display: grid; grid-auto-flow: column; text-align: center; margin-top: 2em;">
-                    <a href="https://github.com/Folleach" aria-label="See my projects on GitHub" style="display: block;">
-                        <svg height="30" width="60">
-                            <image xlink:href="content/images/github.svg"/>
-                        </svg>
-                    </a>
-                    <a href="https://folleach.net/l/discord" aria-label="Message me on Discord" style="display: block;">
-                        <svg height="30" width="60">
-                            <image xlink:href="content/images/discord.svg"/>
-                        </svg>
-                    </a>
-                    <a href="https://youtube.com/Folleach" aria-label="Watch my videos on YouTube" style="display: block;">
-                        <svg height="30" width="60">
-                            <image xlink:href="content/images/youtube.svg"/>
-                        </svg>
-                    </a>
-                    <a href="https://www.twitch.tv/Folleach" aria-label="Watch my streams on Twitch" style="display: block;">
-                        <svg height="30" width="60">
-                            <image xlink:href="content/images/twitch.svg"/>
-                        </svg>
-                    </a>
-                </div>
-            </div>
+<body>
+    <div class="container">
+        <h1>Folleach</h1>
+        <p>A full-queue developer ^_^</p>
+        <div style="display: grid; grid-auto-flow: column; text-align: center; margin-top: 2em;">
+            <a href="https://github.com/Folleach" aria-label="See my projects on GitHub" style="display: block;">
+                <svg height="35" width="60">
+                    <image xlink:href="content/images/github.svg" />
+                </svg>
+            </a>
+            <a href="https://folleach.net/l/discord" aria-label="Message me on Discord" style="display: block;">
+                <svg height="30" width="60">
+                    <image xlink:href="content/images/discord.svg" />
+                </svg>
+            </a>
+            <a href="https://youtube.com/Folleach" aria-label="Watch my videos on YouTube" style="display: block;">
+                <svg height="30" width="60">
+                    <image xlink:href="content/images/youtube.svg" />
+                </svg>
+            </a>
+            <a href="https://www.twitch.tv/Folleach" aria-label="Watch my streams on Twitch" style="display: block;">
+                <svg height="30" width="60">
+                    <image xlink:href="content/images/twitch.svg" />
+                </svg>
+            </a>
         </div>
     </div>
 </body>
