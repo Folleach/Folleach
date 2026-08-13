@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OOM killer calculator — Linux 7.0</title>
+  <meta name="description"
+    content="OOM killer: an interactive calculator for points, oom_score and oom_score_adj across an arbitrary set of processes, matching Linux 7.0.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100,400;100,500;112,600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg: #121415;
+      --panel: #191C1D;
+      --term-bg: #1f1f1f;
+      --term-fg: #cccccc;
+      --term-green: #23d18b;
+      --term-red: #f14c4c;
+      --term-dim: #666666;
+      --ink: #E6E7E1;
+      --ink2: #9AA09A;
+      --ink3: #6C726C;
+      --rule: #262A2B;
+      --rule2: #3B4142;
+      --signal: #F0616F;
+      --signal-bg: rgba(240, 97, 111, .12);
+      --sans: 'Archivo', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    html,
+    body {
+      height: 100%
+    }
+
+    body {
+      margin: 0;
+      background: var(--rule);
+      color: var(--ink);
+      overflow: hidden;
+      font-family: var(--sans);
+      font-size: 16px;
+      line-height: 1.5;
+      font-variant-numeric: tabular-nums;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .bar {
+      flex: none;
+      background: var(--bg);
+      border-bottom: 1px solid var(--rule);
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      flex-wrap: wrap;
+    }
+
+    .brand h1 {
+      font-stretch: 112%;
+      font-weight: 600;
+      font-size: 21px;
+      letter-spacing: -.01em;
+      margin: 0;
+      line-height: 1.15
+    }
+
+    .brand p {
+      margin: 0;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--ink3)
+    }
+
+    .brand a {
+      color: var(--ink2);
+      text-decoration: none;
+      border-bottom: 1px solid var(--rule2)
+    }
+
+    .brand a:hover {
+      color: var(--signal);
+      border-bottom-color: var(--signal)
+    }
+
+    .brand a:focus-visible {
+      outline: 2px solid var(--signal);
+      outline-offset: 2px
+    }
+
+    .ver {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      font-weight: 400;
+      font-stretch: 100%;
+      letter-spacing: .04em;
+      color: var(--ink2);
+      border: 1px solid var(--rule2);
+      border-radius: 2px;
+      padding: 2px 7px;
+      vertical-align: 3px;
+      margin-left: 8px
+    }
+
+    .knob {
+      display: flex;
+      align-items: center;
+      gap: 10px
+    }
+
+    .knob label {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--ink2);
+      white-space: nowrap
+    }
+
+    .knob output {
+      font-family: var(--mono);
+      font-size: 14px;
+      min-width: 56px;
+      text-align: right
+    }
+
+    .derived {
+      margin-left: auto;
+      text-align: right;
+      line-height: 1.1
+    }
+
+    .derived .k {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--ink2)
+    }
+
+    .derived .v {
+      font-stretch: 112%;
+      font-weight: 600;
+      font-size: 24px;
+      letter-spacing: -.01em;
+      display: flex;
+      align-items: baseline;
+      justify-content: flex-end
+    }
+
+    .derived .op {
+      color: var(--ink2);
+      font-weight: 400;
+      font-stretch: 100%;
+      margin: 0 11px
+    }
+
+    main {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      gap: 1px;
+      background: var(--rule);
+      grid-template-columns: minmax(580px, 1fr) 1.25fr
+    }
+
+    .col {
+      background: var(--bg);
+      padding: 12px 16px 14px;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      min-width: 0
+    }
+
+    .eyebrow {
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: .06em;
+      color: var(--ink3);
+      margin: 0 0 8px;
+      flex: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .eyebrow b {
+      font-weight: 400;
+      color: var(--ink2)
+    }
+
+    .eyebrow .acts {
+      display: flex;
+      gap: 6px
+    }
+
+    .pane {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column
+    }
+
+    .pane.term-pane {
+      flex: 1.15
+    }
+
+    .sep {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--rule)
+    }
+
+    .scroll {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      scrollbar-gutter: stable
+    }
+
+    table.procs {
+      width: 100%;
+      table-layout: fixed;
+      border-collapse: collapse;
+      font-size: 14px
+    }
+
+    table.procs th {
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 1;
+      font-family: var(--mono);
+      font-weight: 400;
+      font-size: 11px;
+      letter-spacing: .05em;
+      color: var(--ink3);
+      text-align: left;
+      padding: 0 6px 6px 0;
+      border-bottom: 1px solid var(--rule2);
+      white-space: nowrap;
+    }
+
+    table.procs th.num,
+    table.procs td.num {
+      text-align: right
+    }
+
+    table.procs th a {
+      color: inherit;
+      text-decoration: none;
+      border-bottom: 1px dotted var(--rule2)
+    }
+
+    table.procs th a:hover {
+      color: var(--signal);
+      border-bottom-color: var(--signal);
+      border-bottom-style: solid
+    }
+
+    table.procs th a:focus-visible {
+      outline: 2px solid var(--signal);
+      outline-offset: 2px
+    }
+
+    table.procs td {
+      padding: 7px 6px 7px 0;
+      border-bottom: 1px solid var(--rule);
+      vertical-align: middle;
+      overflow: hidden
+    }
+
+    table.procs td.num {
+      font-family: var(--mono);
+      font-size: 14px
+    }
+
+    table.procs tr.victim td {
+      background: var(--signal-bg)
+    }
+
+    .idx {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--ink3);
+      display: flex;
+      align-items: center;
+      gap: 6px
+    }
+
+    .swatch {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      flex: none
+    }
+
+    .pill {
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 1px 6px;
+      border-radius: 2px;
+      background: var(--signal);
+      color: #12080A;
+      white-space: nowrap
+    }
+
+    .pill.immune {
+      background: transparent;
+      color: var(--ink2);
+      border: 1px solid var(--rule2)
+    }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      flex: 1;
+      min-width: 0;
+      height: 18px;
+      margin: 0;
+      cursor: pointer;
+      touch-action: none
+    }
+
+    input[type=range]::-webkit-slider-runnable-track {
+      height: 2px;
+      background: var(--rule2)
+    }
+
+    input[type=range]::-moz-range-track {
+      height: 2px;
+      background: var(--rule2)
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--ink);
+      margin-top: -5px;
+      border: none
+    }
+
+    input[type=range]::-moz-range-thumb {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--ink);
+      border: none
+    }
+
+    input[type=range]:active::-webkit-slider-thumb {
+      background: var(--signal)
+    }
+
+    input[type=range]:active::-moz-range-thumb {
+      background: var(--signal)
+    }
+
+    input[type=range]:focus-visible {
+      outline: 2px solid var(--signal);
+      outline-offset: 3px
+    }
+
+    input[type=text],
+    input[type=number] {
+      font-family: var(--mono);
+      font-size: 13.5px;
+      color: var(--ink);
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--rule2);
+      padding: 2px;
+      width: 100%;
+      border-radius: 0;
+    }
+
+    input[type=text]:focus,
+    input[type=number]:focus {
+      outline: none;
+      border-bottom-color: var(--signal)
+    }
+
+    input.mem {
+      width: 100%;
+      text-align: right
+    }
+
+    input.adjnum {
+      width: 100%;
+      text-align: right
+    }
+
+    input[type=number] {
+      -moz-appearance: textfield
+    }
+
+    input[type=number]::-webkit-outer-spin-button,
+    input[type=number]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0
+    }
+
+    button {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--ink);
+      background: transparent;
+      border: 1px solid var(--rule2);
+      border-radius: 2px;
+      padding: 6px 11px;
+      cursor: pointer;
+      transition: background .12s, border-color .12s, color .12s;
+    }
+
+    button:hover {
+      background: var(--panel);
+      border-color: var(--ink3)
+    }
+
+    button:focus-visible {
+      outline: 2px solid var(--signal);
+      outline-offset: 2px
+    }
+
+    button.ghost {
+      border-color: transparent;
+      padding: 2px 5px;
+      color: var(--ink3);
+      font-size: 16px;
+      line-height: 1
+    }
+
+    button.ghost:hover {
+      color: var(--signal);
+      background: transparent
+    }
+
+    button.mini {
+      font-size: 10.5px;
+      padding: 3px 7px
+    }
+
+    .btnrow {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+      flex: none
+    }
+
+    .figwrap {
+      flex: 1;
+      min-height: 0;
+      display: flex
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: 100%
+    }
+
+    .axis {
+      stroke: var(--rule2);
+      stroke-width: 1
+    }
+
+    .zero {
+      stroke: var(--ink2);
+      stroke-width: 1
+    }
+
+    .gridline {
+      stroke: var(--rule);
+      stroke-width: 1;
+      stroke-dasharray: 2 4
+    }
+
+    .lbl {
+      font-family: var(--mono);
+      font-size: 12px;
+      fill: var(--ink3)
+    }
+
+    .lbl-strong {
+      font-family: var(--mono);
+      font-size: 13px;
+      fill: var(--ink)
+    }
+
+    .term-box {
+      flex: 1;
+      min-height: 0;
+      background: var(--term-bg);
+      border: 1px solid var(--rule);
+      border-radius: 3px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden
+    }
+
+    .term-bar {
+      flex: none;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 13px;
+      border-bottom: 1px solid var(--rule);
+      color: var(--ink3);
+      font-family: var(--mono);
+      font-size: 12px
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--rule2);
+      flex: none
+    }
+
+    .term-body {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 11px 14px 14px;
+      color: var(--term-fg);
+      font-family: var(--mono);
+      font-size: 13.5px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .term-body .u {
+      color: var(--term-green);
+      font-weight: 500
+    }
+
+    .term-body .s {
+      color: var(--term-fg)
+    }
+
+    .term-body .c {
+      color: var(--term-fg)
+    }
+
+    .term-body .o {
+      color: var(--term-fg)
+    }
+
+    .term-body .d {
+      color: var(--term-dim)
+    }
+
+    .term-body .k {
+      color: var(--term-red)
+    }
+
+    .foot {
+      flex: none;
+      font-family: var(--mono);
+      font-size: 11.5px;
+      color: var(--ink3);
+      margin-top: 8px;
+      line-height: 1.45
+    }
+
+    ::-webkit-scrollbar {
+      width: 9px;
+      height: 9px
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--rule2);
+      border-radius: 4px
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent
+    }
+
+    @media(max-width:1220px), (max-height:520px) {
+      body {
+        overflow: auto;
+        height: auto
+      }
+
+      main {
+        grid-template-columns: 1fr
+      }
+
+      .col {
+        min-height: 340px
+      }
+
+      .pane {
+        min-height: 220px
+      }
+    }
+
+    @media(prefers-reduced-motion:reduce) {
+      * {
+        animation-duration: .001ms !important;
+        transition-duration: .001ms !important
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="bar">
+    <div class="brand">
+      <h1>OOM killer calculator<span class="ver">Linux 7.0</span></h1>
+      <p><a href="https://github.com/torvalds/linux/blob/v7.0/mm/oom_kill.c#L202" target="_blank" rel="noopener"
+          title="mm/oom_kill.c at tag v7.0">oom_badness()</a> · <a
+          href="https://github.com/torvalds/linux/blob/v7.0/fs/proc/base.c#L585" target="_blank" rel="noopener"
+          title="fs/proc/base.c at tag v7.0">proc_oom_score()</a></p>
+    </div>
+    <div class="knob">
+      <label for="ram">RAM</label>
+      <input type="range" id="ram" min="0" max="10" step="1" value="4" style="width:120px">
+      <output id="ramOut">16 GB</output>
+    </div>
+    <div class="knob">
+      <label for="swap">swap</label>
+      <input type="range" id="swap" min="0" max="32" step="1" value="0" style="width:120px">
+      <output id="swapOut">0 GB</output>
+    </div>
+    <div class="derived">
+      <div class="k">one adj point</div>
+      <div class="v"><span id="stepOut">16.4 MB</span><span class="op">≈</span><span id="stepPages">4,194 pages</span>
+      </div>
+    </div>
+  </div>
+
+  <main>
+    <div class="col">
+      <p class="eyebrow"><span>processes</span></p>
+      <div class="scroll">
+        <table class="procs">
+          <thead>
+            <tr>
+              <th style="width:46px">pid</th>
+              <th>name</th>
+              <th class="num" style="width:68px">MB</th>
+              <th class="num" style="width:110px">oom_score_adj</th>
+              <th class="num" style="width:110px"><a
+                  href="https://github.com/torvalds/linux/blob/v7.0/mm/oom_kill.c#L231-L237" target="_blank"
+                  rel="noopener" title="oom_badness(), mm/oom_kill.c L231-237 at tag v7.0">points</a></th>
+              <th class="num" style="width:92px"><a
+                  href="https://github.com/torvalds/linux/blob/v7.0/fs/proc/base.c#L598-L599" target="_blank"
+                  rel="noopener" title="proc_oom_score(), fs/proc/base.c L598-599 at tag v7.0">oom_score</a></th>
+              <th style="width:28px"></th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <div class="btnrow">
+        <button id="add">+ process</button>
+        <button data-preset="shim">shim</button>
+        <button data-preset="dind">dind</button>
+        <button data-preset="k8s">kubernetes</button>
+        <button data-preset="reset">reset</button>
+      </div>
+      <p class="foot">points = rss + swap + pgtables/PAGE_SIZE + adj × (totalpages / 1000)<br>oom_score = (1000 + points
+        × 1000 / totalpages) × 2 / 3</p>
+    </div>
+
+    <div class="col">
+      <p class="eyebrow"><span>points ruler</span><b>4 KiB pages</b></p>
+      <div class="pane">
+        <div class="figwrap"><svg id="ruler" preserveAspectRatio="xMidYMid meet" role="img"
+            aria-labelledby="rulerTitle">
+            <title id="rulerTitle">Process positions along the points axis</title>
+          </svg></div>
+      </div>
+
+      <p class="eyebrow sep"><span>/proc/&lt;pid&gt;/oom_score across the adj range</span><b>0…2000</b></p>
+      <div class="pane">
+        <div class="figwrap"><svg id="chart" preserveAspectRatio="xMidYMid meet" role="img"
+            aria-labelledby="chartTitle">
+            <title id="chartTitle">oom_score as a function of oom_score_adj</title>
+          </svg></div>
+      </div>
+
+      <p class="eyebrow sep"><span>as seen in /proc</span></p>
+      <div class="pane term-pane">
+        <div class="term-box">
+          <div class="term-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span
+              style="margin-left:4px">folleach@pc: ~ — bash</span></div>
+          <div class="term-body" id="termBody" aria-live="polite"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    (function () {
+      'use strict';
+
+      var RAMS = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024];
+      var PAGE = 4096, PAGES_PER_GB = 262144;
+      var COLORS = ['#7C8CF8', '#4FC79C', '#E0A64B', '#B490F0', '#5FB6D4', '#E28C6E'];
+
+      var PRESETS = {
+        shim: {
+          ram: 5, list: [
+            { name: 'systemd', mem: 1, adj: -1000 },
+            { name: 'dockerd', mem: 32, adj: 0 },
+            { name: 'containerd', mem: 22, adj: 0 },
+            { name: 'shim', mem: 10, adj: 0 },
+            { name: 'shim', mem: 10, adj: 1 }
+          ]
+        },
+        dind: {
+          ram: 4, list: [
+            { name: 'containerd', mem: 80, adj: 0 },
+            { name: 'containerd-shim', mem: 10, adj: 1 },
+            { name: 'node', mem: 1400, adj: 0 }
+          ]
+        },
+        k8s: {
+          ram: 4, list: [
+            { name: 'containerd', mem: 120, adj: -999 },
+            { name: 'containerd-shim', mem: 12, adj: -998 },
+            { name: 'kubelet', mem: 90, adj: -999 },
+            { name: 'app guaranteed', mem: 2000, adj: -997 },
+            { name: 'app besteffort', mem: 600, adj: 1000 }
+          ]
+        },
+        reset: {
+          ram: 4, list: [
+            { name: 'postgres', mem: 2400, adj: -500 },
+            { name: 'python', mem: 3100, adj: 0 },
+            { name: 'sshd', mem: 12, adj: -1000 }
+          ]
+        }
+      };
+
+      var procs = [], rows = [];
+
+      function $(id) { return document.getElementById(id); }
+      function pidOf(i) { return i + 1; }
+      function colorOf(i) { return COLORS[i % COLORS.length]; }
+      function fmtPages(n) { return n.toLocaleString('en-US'); }
+      function clampAdj(v) { v = Math.round(v); return v < -1000 ? -1000 : (v > 1000 ? 1000 : v); }
+      function totalPages() { return (RAMS[+$('ram').value] + (+$('swap').value)) * PAGES_PER_GB; }
+
+      function calc(p, tp) {
+        if (p.adj === -1000) return { excluded: true, points: null, score: 0 };
+        var memPages = Math.round(p.mem * 1024 * 1024 / PAGE);
+        var adjPages = p.adj * Math.trunc(tp / 1000);
+        var points = memPages + adjPages;
+        var score = Math.trunc((1000 + Math.trunc(points * 1000 / tp)) * 2 / 3);
+        return {
+          excluded: false, points: points, memPages: memPages, adjPages: adjPages,
+          score: Math.max(0, Math.min(2000, score))
+        };
+      }
+
+      function scoreAt(memMB, adj, tp) {
+        if (adj === -1000) return 0;
+        var points = Math.round(memMB * 1024 * 1024 / PAGE) + adj * Math.trunc(tp / 1000);
+        var s = Math.trunc((1000 + Math.trunc(points * 1000 / tp)) * 2 / 3);
+        return Math.max(0, Math.min(2000, s));
+      }
+
+      function victimOf(results) {
+        var best = 0, idx = -1;
+        results.forEach(function (r, i) {
+          if (r.excluded) return;
+          if (idx === -1 || r.points > best) { best = r.points; idx = i; }
+        });
+        return idx;
+      }
+
+      function el(tag, attrs, text) {
+        var n = document.createElementNS('http://www.w3.org/2000/svg', tag);
+        for (var k in attrs) n.setAttribute(k, attrs[k]);
+        if (text != null) n.textContent = text;
+        return n;
+      }
+
+      function buildRows() {
+        var tbody = $('rows');
+        tbody.textContent = '';
+        rows = [];
+
+        procs.forEach(function (p, i) {
+          var tr = document.createElement('tr');
+
+          var td0 = document.createElement('td');
+          var idx = document.createElement('div');
+          idx.className = 'idx';
+          var sw = document.createElement('span');
+          sw.className = 'swatch';
+          sw.style.background = colorOf(i);
+          idx.appendChild(sw);
+          idx.appendChild(document.createTextNode(String(i + 1)));
+          idx.title = 'pid ' + pidOf(i);
+          td0.appendChild(idx);
+          tr.appendChild(td0);
+
+          var td1 = document.createElement('td');
+          var nameIn = document.createElement('input');
+          nameIn.type = 'text';
+          nameIn.value = p.name;
+          nameIn.setAttribute('aria-label', 'name of process ' + (i + 1));
+          nameIn.addEventListener('input', function () { p.name = nameIn.value; refresh(); });
+          td1.appendChild(nameIn);
+          tr.appendChild(td1);
+
+          var td2 = document.createElement('td');
+          td2.className = 'num';
+          var memIn = document.createElement('input');
+          memIn.type = 'number'; memIn.min = '0'; memIn.step = '1'; memIn.className = 'mem';
+          memIn.value = p.mem;
+          memIn.setAttribute('aria-label', 'memory of process ' + (i + 1) + ' in megabytes');
+          memIn.addEventListener('input', function () {
+            var v = parseFloat(memIn.value);
+            p.mem = isNaN(v) || v < 0 ? 0 : v;
+            refresh();
+          });
+          td2.appendChild(memIn);
+          tr.appendChild(td2);
+
+          var td3 = document.createElement('td');
+          td3.className = 'num';
+          var adjNum = document.createElement('input');
+          adjNum.type = 'number'; adjNum.min = '-1000'; adjNum.max = '1000'; adjNum.step = '1';
+          adjNum.className = 'adjnum';
+          adjNum.value = p.adj;
+          adjNum.setAttribute('aria-label', 'oom_score_adj of process ' + (i + 1));
+          adjNum.addEventListener('input', function () {
+            var v = parseInt(adjNum.value, 10);
+            if (isNaN(v)) return;
+            p.adj = clampAdj(v);
+            refresh();
+          });
+          adjNum.addEventListener('blur', function () { adjNum.value = p.adj; });
+          td3.appendChild(adjNum);
+          tr.appendChild(td3);
+
+          var td4 = document.createElement('td');
+          td4.className = 'num';
+          tr.appendChild(td4);
+
+          var td5 = document.createElement('td');
+          td5.className = 'num';
+          tr.appendChild(td5);
+
+          var td6 = document.createElement('td');
+          var del = document.createElement('button');
+          del.className = 'ghost';
+          del.textContent = '×';
+          del.title = 'remove process ' + (i + 1);
+          del.setAttribute('aria-label', 'remove process ' + (i + 1));
+          del.addEventListener('click', function () {
+            procs.splice(i, 1);
+            buildRows();
+            refresh();
+          });
+          td6.appendChild(del);
+          tr.appendChild(td6);
+
+          tbody.appendChild(tr);
+          rows.push({ tr: tr, points: td4, score: td5 });
+        });
+      }
+
+      function paintRows(results, vic) {
+        rows.forEach(function (ref, i) {
+          var r = results[i];
+          ref.tr.className = (i === vic) ? 'victim' : '';
+          ref.points.textContent = '';
+          if (r.excluded) {
+            var im = document.createElement('span');
+            im.className = 'pill immune';
+            im.textContent = 'LONG_MIN';
+            ref.points.appendChild(im);
+          } else {
+            ref.points.textContent = fmtPages(r.points);
+          }
+          ref.score.textContent = '';
+          if (i === vic) {
+            var sp = document.createElement('span');
+            sp.className = 'pill';
+            sp.textContent = r.score;
+            ref.score.appendChild(sp);
+          } else {
+            ref.score.textContent = r.score;
+          }
+        });
+      }
+
+      function renderRuler(state) {
+        var svg = $('ruler');
+        while (svg.childNodes.length > 1) svg.removeChild(svg.lastChild);
+
+        var W = 1000, rowH = 34, top = 26, left = 176, right = 40;
+        var H = top + Math.max(1, procs.length) * rowH + 34;
+        svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+
+        var vals = [0];
+        state.results.forEach(function (r) { if (!r.excluded) vals.push(r.points); });
+        var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+        if (hi === lo) hi = lo + 1;
+        var pad = (hi - lo) * 0.08;
+        lo -= pad; hi += pad;
+        var x = function (v) { return left + (v - lo) / (hi - lo) * (W - left - right); };
+        var zx = x(0);
+
+        svg.appendChild(el('line', { x1: zx, y1: top - 12, x2: zx, y2: H - 24, class: 'zero' }));
+        svg.appendChild(el('text', { x: zx, y: H - 8, class: 'lbl-strong', 'text-anchor': 'middle' }, '0'));
+        svg.appendChild(el('text', { x: W - right, y: H - 8, class: 'lbl', 'text-anchor': 'end' }, fmtPages(Math.round(hi))));
+        if (lo < 0) svg.appendChild(el('text', { x: left, y: H - 8, class: 'lbl', 'text-anchor': 'start' }, fmtPages(Math.round(lo))));
+
+        procs.forEach(function (p, i) {
+          var r = state.results[i], y = top + i * rowH + rowH / 2, c = colorOf(i);
+          svg.appendChild(el('text', { x: left - 14, y: y + 4, class: 'lbl-strong', 'text-anchor': 'end' }, (i + 1) + '. ' + p.name));
+
+          if (r.excluded) {
+            svg.appendChild(el('line', { x1: zx, y1: y, x2: W - right, y2: y, stroke: 'var(--rule2)', 'stroke-width': 1, 'stroke-dasharray': '3 5' }));
+            svg.appendChild(el('text', { x: zx + 10, y: y - 7, class: 'lbl' }, 'not eligible'));
+            return;
+          }
+          var x0 = x(0), xm = x(r.memPages), xp = x(r.points);
+          svg.appendChild(el('rect', { x: Math.min(x0, xm), y: y - 6, width: Math.max(1, Math.abs(xm - x0)), height: 12, fill: c, opacity: 0.9 }));
+          var aS = Math.min(xm, xp), aE = Math.max(xm, xp);
+          if (aE - aS > 0.5) {
+            svg.appendChild(el('rect', { x: aS, y: y - 6, width: aE - aS, height: 12, fill: c, opacity: 0.15 }));
+            svg.appendChild(el('rect', { x: aS, y: y - 6, width: aE - aS, height: 12, fill: 'none', stroke: c, 'stroke-width': 1, 'stroke-dasharray': '2 3', opacity: 0.85 }));
+          }
+          svg.appendChild(el('circle', { cx: xp, cy: y, r: 4.5, fill: c, stroke: 'var(--bg)', 'stroke-width': 2 }));
+          if (i === state.victim) {
+            svg.appendChild(el('line', { x1: xp, y1: y - 16, x2: xp, y2: y + 16, stroke: 'var(--signal)', 'stroke-width': 1.5 }));
+            svg.appendChild(el('text', { x: xp + 8, y: y - 10, class: 'lbl-strong', fill: 'var(--signal)' }, 'victim'));
+          }
+        });
+      }
+
+      function renderChart(state) {
+        var svg = $('chart'), tp = totalPages();
+        while (svg.childNodes.length > 1) svg.removeChild(svg.lastChild);
+
+        var W = 1000, H = 340, L = 58, R = 20, T = 16, B = 44;
+        svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+        var px = function (a) { return L + (a + 1000) / 2000 * (W - L - R); };
+        var py = function (s) { return H - B - s / 2000 * (H - T - B); };
+
+        [0, 666, 1333, 2000].forEach(function (s) {
+          svg.appendChild(el('line', { x1: L, y1: py(s), x2: W - R, y2: py(s), class: 'gridline' }));
+          svg.appendChild(el('text', { x: L - 8, y: py(s) + 4, class: 'lbl', 'text-anchor': 'end' }, String(s)));
+        });
+        svg.appendChild(el('line', { x1: L, y1: py(0), x2: W - R, y2: py(0), class: 'axis' }));
+        svg.appendChild(el('line', { x1: px(0), y1: T, x2: px(0), y2: py(0), class: 'gridline' }));
+        [-1000, -500, 0, 500, 1000].forEach(function (a) {
+          svg.appendChild(el('text', { x: px(a), y: H - B + 18, class: 'lbl', 'text-anchor': 'middle' }, a > 0 ? '+' + a : String(a)));
+        });
+        svg.appendChild(el('text', { x: (L + W - R) / 2, y: H - 8, class: 'lbl', 'text-anchor': 'middle' }, 'oom_score_adj'));
+
+        var placed = [];
+        function labelY(lx, ly) {
+          var moved = true, guard = 0;
+          while (moved && guard < 14) {
+            moved = false; guard++;
+            placed.forEach(function (q) {
+              if (Math.abs(q.x - lx) < 80 && Math.abs(q.y - ly) < 15) { ly = q.y - 15; moved = true; }
+            });
+          }
+          placed.push({ x: lx, y: ly });
+          return ly;
+        }
+
+        procs.forEach(function (p, i) {
+          var pts = [], c = colorOf(i);
+          for (var a = -999; a <= 1000; a += 4) pts.push(px(a).toFixed(1) + ',' + py(scoreAt(p.mem, a, tp)).toFixed(1));
+          svg.appendChild(el('polyline', { points: pts.join(' '), fill: 'none', stroke: c, 'stroke-width': 1.6, opacity: 0.9 }));
+
+          var r = state.results[i];
+          var mx = px(r.excluded ? -1000 : p.adj), my = py(r.excluded ? 0 : r.score);
+          svg.appendChild(el('circle', r.excluded
+            ? { cx: mx, cy: my, r: 4, fill: 'var(--bg)', stroke: c, 'stroke-width': 1.4 }
+            : { cx: mx, cy: my, r: 4.5, fill: c, stroke: 'var(--bg)', 'stroke-width': 2 }));
+          var ly = labelY(mx + 8, my - 8);
+          if (ly < my - 10) svg.appendChild(el('line', { x1: mx, y1: my, x2: mx + 6, y2: ly + 4, stroke: c, 'stroke-width': 0.8, opacity: 0.5 }));
+          svg.appendChild(el('text', { x: mx + 8, y: ly, class: 'lbl-strong', fill: c }, (i + 1) + '. ' + p.name));
+        });
+      }
+
+      function buildScript(state) {
+        var lines = [];
+        procs.forEach(function (p, i) {
+          var r = state.results[i];
+          lines.push({ t: 'cmd', v: 'cat /proc/' + pidOf(i) + '/oom_score_adj' });
+          lines.push({ t: 'out', v: String(p.adj) });
+          lines.push({ t: 'cmd', v: 'cat /proc/' + pidOf(i) + '/oom_score' });
+          lines.push({ t: 'out', v: String(r.score) });
+        });
+        if (state.victim >= 0) {
+          var v = procs[state.victim];
+          lines.push({ t: 'cmd', v: 'dmesg --color=always | tail -2' });
+          lines.push({ t: 'kill', v: '[ 4213.008711] Out of memory: Killed process ' + pidOf(state.victim) + ' (' + v.name + ')' });
+          lines.push({
+            t: 'kill', v: '  anon-rss:' + Math.round(v.mem) * 1024 + 'kB, pgtables:' +
+              Math.max(64, Math.round(v.mem * 0.26)) + 'kB, oom_score_adj:' + v.adj
+          });
+        } else {
+          lines.push({ t: 'cmd', v: 'dmesg --color=always | tail -1' });
+          lines.push({ t: 'kill', v: '[ 4213.008711] Out of memory and no killable processes...' });
+        }
+        return lines;
+      }
+
+      function termAppend(cls, text) {
+        var span = document.createElement('span');
+        span.className = cls;
+        span.textContent = text;
+        $('termBody').appendChild(span);
+      }
+
+      function termPrompt() {
+        termAppend('u', 'folleach@pc');
+        termAppend('s', ':');
+        termAppend('u', '~');
+        termAppend('s', '$ ');
+      }
+
+      function renderTerm(state) {
+        $('termBody').textContent = '';
+        buildScript(state).forEach(function (l) {
+          if (l.t === 'cmd') { termPrompt(); termAppend('c', l.v + '\n'); }
+          else termAppend(l.t === 'out' ? 'o' : (l.t === 'dim' ? 'd' : 'k'), l.v + '\n');
+        });
+      }
+
+      function refresh() {
+        var ram = RAMS[+$('ram').value], swap = +$('swap').value;
+        var tp = (ram + swap) * PAGES_PER_GB;
+        var stepMB = Math.trunc(tp / 1000) * PAGE / 1048576;
+        $('ramOut').textContent = ram + ' GB';
+        $('swapOut').textContent = swap + ' GB';
+        $('stepOut').textContent = stepMB < 1 ? (stepMB * 1024).toFixed(0) + ' KB' : stepMB.toFixed(1) + ' MB';
+        $('stepPages').textContent = fmtPages(Math.trunc(tp / 1000)) + ' pages';
+
+        var results = procs.map(function (p) { return calc(p, tp); });
+        var state = { results: results, victim: victimOf(results) };
+
+        paintRows(results, state.victim);
+        renderRuler(state);
+        renderChart(state);
+        renderTerm(state);
+      }
+
+      function loadPreset(key) {
+        var preset = PRESETS[key];
+        $('ram').value = preset.ram;
+        procs = preset.list.map(function (s) { return { name: s.name, mem: s.mem, adj: s.adj }; });
+        buildRows();
+        refresh();
+      }
+
+      $('ram').addEventListener('input', function () { refresh(); });
+      $('swap').addEventListener('input', function () { refresh(); });
+      $('add').addEventListener('click', function () {
+        procs.push({ name: 'process-' + (procs.length + 1), mem: 256, adj: 0 });
+        buildRows();
+        refresh();
+      });
+      Array.prototype.forEach.call(document.querySelectorAll('[data-preset]'), function (btn) {
+        btn.addEventListener('click', function () { loadPreset(btn.getAttribute('data-preset')); });
+      });
+      loadPreset('reset');
+    })();
+  </script>
+</body>
+
+</html>
